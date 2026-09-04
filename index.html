@@ -23,6 +23,21 @@
       --glass: rgba(255,255,255,.045);
     }
 
+    /* PLANNO Logo */
+    .planno-logo {
+      position: absolute;
+      top: 32px;
+      left: 5vw;
+      z-index: 8;
+      font-family: "Great Vibes", cursive;
+      font-size: 50px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: #d9d2c5;
+      line-height: 1;
+      display: inline-block;
+    }
+
     * { box-sizing: border-box; }
 
     html {
@@ -419,6 +434,12 @@
     }
 
     @media (max-width: 650px) {
+      .planno-logo {
+        top: 24px;
+        left: 6vw;
+        font-size: 42px;
+      }
+
       .hero {
         min-height: 100svh;
         padding: 0 6vw 13vh;
@@ -492,6 +513,11 @@
 </head>
 
 <body>
+<!-- PLANNO Header / Navbar -->
+<header class="planno-header">
+  <div class="planno-logo">PLANNO</div>
+</header>
+
 
   <div class="site">
 
@@ -510,6 +536,9 @@
         <canvas id="webgl"></canvas>
 
         <div class="hero-copy">
+          <!-- PLANNO Logo -->
+          <div class="planno-logo">PLANNO</div>
+
 
           <div class="eyebrow">
             Smart Project Management / Your Workspace

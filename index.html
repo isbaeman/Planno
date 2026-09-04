@@ -22,7 +22,6 @@
       --line: rgba(229, 202, 143, .18);
       --glass: rgba(255,255,255,.045);
     }
-
     /* PLANNO Logo */
     .planno-logo {
       position: absolute;
@@ -99,11 +98,6 @@
       filter: blur(8px);
       z-index: 2;
     }
-
-    /*
-      IMPORTANT:
-      The old top header/navbar has been completely removed.
-    */
 
     /* Hero */
     .hero {
@@ -518,7 +512,6 @@
   <div class="planno-logo">PLANNO</div>
 </header>
 
-
   <div class="site">
 
     <div class="noise"></div>
@@ -536,9 +529,6 @@
         <canvas id="webgl"></canvas>
 
         <div class="hero-copy">
-          <!-- PLANNO Logo -->
-
-
           <div class="eyebrow">
             Smart Project Management / Your Workspace
           </div>
@@ -4423,7 +4413,7 @@
                       data-id="${x.id}"
                       aria-label="Remove from favorites"
                       title="Remove from favorites"
-                      onclick="event.stopPropagation()"
+                      
                     >★</button>
                   </div>
                   ${type === 'note' ? `<div class="planno-note-body">${esc(x.content)}</div>` : ''}
@@ -5387,11 +5377,14 @@
 
         if(x){
 
+          // Single source of truth: the item stored in state.
           x.favorite =
-            !x.favorite;
+            x.favorite !== true;
 
           save();
 
+          // Re-render the active section immediately. In Favorites this
+          // removes the unfavorited card without a page reload.
           refreshCurrent();
 
           toast(

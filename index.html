@@ -537,6 +537,8 @@
 
         <div class="hero-copy">
           <!-- PLANNO Logo -->
+          <div class="planno-logo">PLANNO</div>
+
 
           <div class="eyebrow">
             Smart Project Management / Your Workspace
@@ -3222,7 +3224,7 @@
               '{}'
             );
 
-          return Object.assign(
+          const next = Object.assign(
             {},
             defaults,
             saved,
@@ -3242,6 +3244,16 @@
                 )
             }
           );
+
+          ['notes','tasks','projects','events'].forEach(key => {
+            next[key] = Array.isArray(next[key]) ? next[key] : [];
+            next[key].forEach(item => {
+              if(typeof item.favorite !== 'boolean')
+                item.favorite = false;
+            });
+          });
+
+          return next;
 
         } catch(e) {
 
@@ -4005,6 +4017,14 @@
                           <div class="planno-actions">
 
                             <button
+                              class="planno-fav ${t.favorite ? 'active' : ''}"
+                              data-fav="task"
+                              data-id="${t.id}"
+                              aria-label="${t.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+                              title="${t.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+                            >${t.favorite ? '★' : '☆'}</button>
+
+                            <button
                               class="planno-btn ghost"
                               data-edit="task"
                               data-id="${t.id}"
@@ -4177,9 +4197,29 @@
                     `
                       <div
                         class="planno-event"
+                        data-id="${e.id}"
                         title="${esc(e.title)}"
+                        style="display:flex;align-items:center;justify-content:space-between;gap:4px"
                       >
-                        ${esc(e.title)}
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</span>
+                        <span style="display:inline-flex;align-items:center;gap:2px;flex:none">
+                          <button
+                            class="planno-fav ${e.favorite ? 'active' : ''}"
+                            data-fav="event"
+                            data-id="${e.id}"
+                            aria-label="${e.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+                            title="${e.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+                            style="font-size:13px;padding:0;line-height:1"
+                          >${e.favorite ? '★' : '☆'}</button>
+                          <button
+                            class="planno-fav"
+                            data-delete="event"
+                            data-id="${e.id}"
+                            aria-label="Move event to trash"
+                            title="Move to Trash"
+                            style="font-size:12px;padding:0;line-height:1"
+                          >×</button>
+                        </span>
                       </div>
                     `
                 ).join('')
@@ -4300,6 +4340,14 @@
                     >
 
                       <button
+                        class="planno-fav ${p.favorite ? 'active' : ''}"
+                        data-fav="project"
+                        data-id="${p.id}"
+                        aria-label="${p.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+                        title="${p.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+                      >${p.favorite ? '★' : '☆'}</button>
+
+                      <button
                         class="planno-btn ghost"
                         data-edit="project"
                         data-id="${p.id}"
@@ -4332,15 +4380,19 @@
 
       function renderFavorites(){
 
-        const n =
-          state.notes.filter(
-            x => x.favorite
-          );
+        const groups = [
+          ['note', 'NOTE', state.notes],
+          ['task', 'TASK', state.tasks],
+          ['project', 'PROJECT', state.projects],
+          ['event', 'EVENT', state.events]
+        ];
 
-        const p =
-          state.projects.filter(
-            x => x.favorite
-          );
+        const items = groups.flatMap(
+          ([type, label, arr]) =>
+            arr
+              .filter(x => x.favorite)
+              .map(x => ({ type, label, item: x }))
+        );
 
         const grid =
           document.getElementById(
@@ -4350,65 +4402,44 @@
         if(!grid)
           return;
 
-
         grid.innerHTML =
-          (
-            n.length +
-            p.length
-          )
-          ?
-          [
-            ...n.map(
-              x =>
-                `
-                  <div class="planno-card">
-
-                    <div class="planno-kicker">
-                      NOTE
+          items.length
+          ? items.map(
+              ({type, label, item: x}) => `
+                <div
+                  class="planno-card"
+                  data-open-item="${type}"
+                  data-id="${x.id}"
+                  style="cursor:pointer"
+                  title="Open ${label.toLowerCase()}"
+                >
+                  <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+                    <div>
+                      <div class="planno-kicker">${label}</div>
+                      <b>${esc(x.title || 'Untitled')}</b>
                     </div>
-
-                    <b>
-                      ${esc(x.title)}
-                    </b>
-
-                    <div class="planno-note-body">
-                      ${esc(x.content)}
-                    </div>
-
+                    <button
+                      class="planno-fav active"
+                      data-fav="${type}"
+                      data-id="${x.id}"
+                      aria-label="Remove from favorites"
+                      title="Remove from favorites"
+                      onclick="event.stopPropagation()"
+                    >★</button>
                   </div>
-                `
-            ),
-
-            ...p.map(
-              x =>
-                `
-                  <div class="planno-card">
-
-                    <div class="planno-kicker">
-                      PROJECT
-                    </div>
-
-                    <b>
-                      ${esc(x.title)}
-                    </b>
-
-                    <div class="planno-note-body">
-                      ${esc(x.description)}
-                    </div>
-
-                  </div>
-                `
-            )
-
-          ].join('')
-          :
-          empty(
-            '★',
-            'Nothing saved yet'
-          );
+                  ${type === 'note' ? `<div class="planno-note-body">${esc(x.content)}</div>` : ''}
+                  ${type === 'task' ? `<div class="planno-small" style="margin-top:7px">${esc(x.category || 'General')} · ${esc(x.priority || 'Normal')} · ${esc(x.due || 'No due date')}</div>` : ''}
+                  ${type === 'project' ? `<div class="planno-note-body">${esc(x.description || '')}</div>` : ''}
+                  ${type === 'event' ? `<div class="planno-small" style="margin-top:7px">${esc(x.date || 'No date')}</div>` : ''}
+                </div>
+              `
+            ).join('')
+          : empty(
+              '★',
+              'Nothing saved yet'
+            );
 
       }
-
 
       function renderTrash(){
 
@@ -4454,6 +4485,7 @@
                       </button>
 
                       <button
+                        type="button"
                         class="planno-btn ghost"
                         data-permadelete="${x.id}"
                       >
@@ -4472,6 +4504,91 @@
             'Trash is empty'
           );
 
+        // Bind directly on the rendered buttons.
+        // Use an in-app confirmation instead of window.confirm so the
+        // action also works when the HTML is opened inside an embedded preview.
+        grid.querySelectorAll('[data-permadelete]').forEach(btn => {
+          btn.addEventListener('click', ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            permanentlyDeleteTrash(btn.getAttribute('data-permadelete'));
+          });
+        });
+
+      }
+
+
+      function permanentlyDeleteTrash(trashId){
+
+        const id = String(trashId || '');
+        const index = state.trash.findIndex(
+          x => String(x.id) === id
+        );
+
+        if(index < 0) return;
+
+        const item = state.trash[index];
+        const title = item && item.data
+          ? (item.data.title || 'Untitled')
+          : 'Untitled';
+
+        const old = document.getElementById('plannoDeleteConfirm');
+        if(old) old.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'plannoDeleteConfirm';
+        overlay.className = 'planno-modal open';
+        overlay.innerHTML = `
+          <div class="planno-card" style="max-width:430px;width:100%;position:relative;z-index:2">
+            <div class="planno-kicker">Permanent delete</div>
+            <h3 style="margin:0 0 10px">Delete “${esc(title)}”?</h3>
+            <p class="planno-muted" style="line-height:1.6;margin:0 0 20px">
+              This item will be removed from Trash permanently. This action cannot be undone.
+            </p>
+            <div class="planno-actions">
+              <button type="button" class="planno-btn ghost" data-cancel-delete>
+                Cancel
+              </button>
+              <button type="button" class="planno-btn" data-confirm-delete>
+                Permanently delete
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const close = () => {
+          overlay.remove();
+        };
+
+        overlay.addEventListener('click', ev => {
+          if(ev.target === overlay) close();
+        });
+
+        overlay.querySelector('[data-cancel-delete]')
+          .addEventListener('click', close);
+
+        overlay.querySelector('[data-confirm-delete]')
+          .addEventListener('click', ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            const currentIndex = state.trash.findIndex(
+              x => String(x.id) === id
+            );
+
+            if(currentIndex < 0){
+              close();
+              return;
+            }
+
+            state.trash.splice(currentIndex, 1);
+            save();
+            close();
+            renderTrash();
+            toast('Permanently deleted');
+          });
       }
 
 
@@ -5499,11 +5616,13 @@
               '[data-delete]'
             );
 
-          if(del)
+          if(del){
             deleteItem(
               del.dataset.delete,
               del.dataset.id
             );
+            return;
+          }
 
 
           const fav =
@@ -5511,11 +5630,13 @@
               '[data-fav]'
             );
 
-          if(fav)
+          if(fav){
             toggleFavorite(
               fav.dataset.fav,
               fav.dataset.id
             );
+            return;
+          }
 
 
           const tog =
@@ -5603,29 +5724,39 @@
           }
 
 
-          const pd =
+          const openItem =
             e.target.closest(
-              '[data-permadelete]'
+              '[data-open-item]'
             );
 
-          if(pd){
+          if(openItem && !e.target.closest('[data-fav]')){
+            showPage(openItem.dataset.openItem
+            );
 
-            state.trash =
-              state.trash.filter(
-                x =>
-                  x.id !==
-                  pd.dataset
-                    .permadelete
+            setTimeout(() => {
+              openModal(
+                openItem.dataset.openItem,
+                openItem.dataset.id
               );
+            }, 0);
 
-            save();
+            return;
+          }
 
-            refreshCurrent();
 
-            toast(
-              'Permanently deleted'
+
+
+          const eventItem =
+            e.target.closest(
+              '.planno-event[data-id]'
             );
 
+          if(eventItem){
+            openModal(
+              'event',
+              eventItem.dataset.id
+            );
+            return;
           }
 
 
